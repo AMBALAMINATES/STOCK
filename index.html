@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stock Management</title>
+    <link rel="stylesheet" href="i.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Stock Management</h1>
+        <div class="form-group">
+            <label for="sku">Enter SKU:</label>
+            <input type="text" id="sku" placeholder="Enter SKU">
+            <button onclick="fetchStockData()">Fetch Stock</button>
+        </div>
+        
+        <h2>Production Data (In)</h2>
+        <table id="productionTable" class="data-table">
+            <thead>
+                <tr>
+                    <th>SKU</th>
+                    <th>Quantity Produced</th>
+                    <th>Production Date</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+            <tfoot>
+                <tr>
+                    <td><strong>Total:</strong></td>
+                    <td id="totalProduced">0</td>
+                    <td></td>
+                </tr>
+            </tfoot>
+        </table>
+        
+        <h2>Dispatch Data (Out)</h2>
+        <table id="dispatchTable" class="data-table">
+            <thead>
+                <tr>
+                    <th>SKU</th>
+                    <th>Quantity Dispatched</th>
+                    <th>Dispatch Date</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+            <tfoot>
+                <tr>
+                    <td><strong>Total:</strong></td>
+                    <td id="totalDispatched">0</td>
+                    <td></td>
+                </tr>
+            </tfoot>
+        </table>
+
+        <div id="result">
+            <p id="remainingStock"></p>
+        </div>
+    </div>
+
+    <script src="i.js"></script>
+</body>
+</html>
