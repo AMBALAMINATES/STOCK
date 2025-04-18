@@ -1,63 +1,138 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AMBA STOCK</title>
-    <link rel="stylesheet" href="i.css">
+  <meta charset="UTF-8">
+  <title>AMBA STOCK</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+    }
+    input, button {
+      padding: 8px;
+      margin: 10px 0;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 20px;
+    }
+    th, td {
+      border: 1px solid #999;
+      padding: 8px;
+      text-align: center;
+    }
+    th {
+      background-color: #f2f2f2;
+    }
+    .section-title {
+      margin-top: 30px;
+      font-size: 18px;
+      font-weight: bold;
+    }
+  </style>
 </head>
 <body>
-    <div class="container">
-        <h1>AMBA STOCK</h1>
-        <div class="form-group">
-            <label for="sku">Enter SKU:</label>
-            <input type="text" id="sku" placeholder="Enter SKU">
-            <button onclick="fetchStockData()">Fetch Stock</button>
-        </div>
-        
-        <h2>Production Data (In)</h2>
-        <table id="productionTable" class="data-table">
-            <thead>
-                <tr>
-                    <th>SKU</th>
-                    <th>Quantity Produced</th>
-                    <th>Production Date</th>
-                </tr>
-            </thead>
-            <tbody></tbody>
-            <tfoot>
-                <tr>
-                    <td><strong>Total:</strong></td>
-                    <td id="totalProduced">0</td>
-                    <td></td>
-                </tr>
-            </tfoot>
-        </table>
-        
-        <h2>Dispatch Data (Out)</h2>
-        <table id="dispatchTable" class="data-table">
-            <thead>
-                <tr>
-                    <th>SKU</th>
-                    <th>Quantity Dispatched</th>
-                    <th>Dispatch Date</th>
-                </tr>
-            </thead>
-            <tbody></tbody>
-            <tfoot>
-                <tr>
-                    <td><strong>Total:</strong></td>
-                    <td id="totalDispatched">0</td>
-                    <td></td>
-                </tr>
-            </tfoot>
+
+  <h2>AMBA STOCK </h2>
+  <label for ="skuInput">Enter SKU:</label>
+  <input type="text" id="skuInput" placeholder="e.g., 471MPD">
+  <button onclick="fetchStock()">Fetch Stock</button>
+
+  <div id="stockDisplay"></div>
+
+  <script>
+    const inCsvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT91A_LuXxb_QVO5Q8iidQyQQCFFhkSkRnVlgJQvhgkeluHEdKJUbht_WRTbwMClofYiDm5Ej-Zw311/pub?gid=1865060622&single=true&output=csv'; // Replace with your actual In Sheet CSV URL
+    const outCsvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQ5ZO4mvjCEAbv4l3-bZUOwBvLl_d6aHPtvYinZPxZ1NpCq4nyjVFrFV_nDXIRpga-htqmsCQm04e3b/pub?gid=0&single=true&output=csv'; // Replace with your actual Out Sheet CSV URL
+
+    async function fetchCSV(url) {
+      const res = await fetch(url);
+      const text = await res.text();
+      const rows = text.trim().split('\n').map(row => row.split(','));
+      const headers = rows[0].map(h => h.trim().toLowerCase()); // Normalize headers
+      console.log('Fetched CSV headers:', headers); // Debug: log headers to see how they are parsed
+      return rows.slice(1).map(row => {
+        const obj = {};
+        row.forEach((val, i) => {
+          obj[headers[i]] = val.trim();
+        });
+        return obj;
+      });
+    }
+
+    async function fetchStock() {
+      const sku = document.getElementById('skuInput').value.trim();
+      if (!sku) return alert("Please enter a SKU");
+
+      const inData = await fetchCSV(inCsvUrl);
+      const outData = await fetchCSV(outCsvUrl);
+
+      console.log('In Data:', inData); // Debug: log In data to inspect the fetched rows
+      console.log('Out Data:', outData); // Debug: log Out data to inspect the fetched rows
+
+      // Filter "In" data (looking for "In" in 'in/out' column)
+      const filteredIn = inData.filter(row => row['sku'] === sku && row['in/out'] === 'In');
+      console.log('Filtered In Data:', filteredIn); // Debug: log filtered "In" data
+
+      // Filter "Out" data (looking for matching SKU in Out Sheet)
+      const filteredOut = outData.filter(row => row['sku'] === sku);
+      console.log('Filtered Out Data:', filteredOut); // Debug: log filtered "Out" data
+
+      let totalIn = 0;
+      let inRowsHtml = '';
+
+      // Process "In" data (sum up the quantities)
+      for (let row of filteredIn) {
+        const qty = parseInt(row['quantity']) || 0;
+        totalIn += qty;
+
+        inRowsHtml += `<tr>
+          <td>${row['date']}</td>
+          <td>${row['sku']}</td>
+          <td>${qty}</td>
+          <td>${row['s o number/ load no'] || 'OPENING STOCK'}</td>
+        </tr>`;
+      }
+
+      let totalOut = 0;
+      let outRowsHtml = '';
+
+      // Process "Out" data (sum up the quantities)
+      for (let row of filteredOut) {
+        const qty = parseInt(row['qty']) || 0;  // Ensure correct parsing of qty from Out Sheet
+        totalOut += qty;
+
+        outRowsHtml += `<tr>
+          <td>${row['date']}</td>
+          <td>${row['sku']}</td>
+          <td>${qty}</td>
+          <td>${row['party name'] || 'N/A'}</td>
+        </tr>`;
+      }
+
+      const remaining = totalIn - totalOut;
+
+      let html = `
+        <div class="section-title">In Details</div>
+        <table>
+          <tr><th>Date</th><th>SKU</th><th>Qty</th><th>Load No</th></tr>
+          ${inRowsHtml || '<tr><td colspan="4">No In Data</td></tr>'}
+          <tr><td colspan="2"><strong>Total In</strong></td><td colspan="2"><strong>${totalIn}</strong></td></tr>
         </table>
 
-        <div id="result">
-            <p id="remainingStock"></p>
-        </div>
-    </div>
+        <div class="section-title">Out Details</div>
+        <table>
+          <tr><th>Date</th><th>SKU</th><th>Qty</th><th>Party Name</th></tr>
+          ${outRowsHtml || '<tr><td colspan="4">No Out Data</td></tr>'}
+          <tr><td colspan="2"><strong>Total Out</strong></td><td colspan="2"><strong>${totalOut}</strong></td></tr>
+        </table>
 
-    <script src="i.js"></script>
+        <div class="section-title">Remaining Stock: <span style="color: green;">${remaining}</span></div>
+      `;
+
+      document.getElementById('stockDisplay').innerHTML = html;
+    }
+  </script>
+
 </body>
 </html>
