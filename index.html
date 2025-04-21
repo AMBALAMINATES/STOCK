@@ -4,53 +4,174 @@
   <meta charset="UTF-8">
   <title>AMBA STOCK</title>
   <style>
+    * {
+      box-sizing: border-box;
+    }
+
     body {
-      font-family: Arial, sans-serif;
-      margin: 20px;
+      margin: 0;
+      padding: 30px;
+      background-color: #f0f2f5;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      color: #333;
     }
-    input, button {
-      padding: 8px;
-      margin: 10px 0;
+
+    h1 {
+      text-align: center;
+      margin-bottom: 20px;
+      font-size: 32px;
+      color: #2c3e50;
     }
+
+    .input-area {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 30px;
+    }
+
+    input[type="text"],
+    input[type="date"] {
+      padding: 12px 20px;
+      font-size: 16px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      outline: none;
+      transition: 0.3s;
+    }
+
+    button {
+      padding: 12px 20px;
+      font-size: 16px;
+      background-color: #3498db;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+
+    button:hover {
+      background-color: #2980b9;
+    }
+
+    .summary {
+      text-align: center;
+      font-size: 22px;
+      font-weight: bold;
+      color: black;
+      background-color: #fff;
+      padding: 15px;
+      margin: 20px auto;
+      border-radius: 12px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+      width: fit-content;
+    }
+
+    .container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 20px;
+    }
+
+    .row {
+      display: flex;
+      justify-content: space-between;
+      width: 100%;
+      gap: 20px;
+    }
+
+    .card {
+      background-color: #fff;
+      flex: 1;
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    }
+
+    .card h2 {
+      text-align: center;
+      margin-bottom: 20px;
+      font-size: 20px;
+      color: #34495e;
+    }
+
     table {
       width: 100%;
       border-collapse: collapse;
-      margin-bottom: 20px;
     }
+
     th, td {
-      border: 1px solid #999;
-      padding: 8px;
+      padding: 10px;
       text-align: center;
     }
+
     th {
-      background-color: #f2f2f2;
+      background-color: #ecf0f1;
     }
-    .section-title {
-      margin-top: 30px;
-      font-size: 18px;
+
+    tr:hover {
+      background-color: #f9f9f9;
+    }
+
+    .total-row {
       font-weight: bold;
+      background-color: #fafafa;
+    }
+
+    @media screen and (max-width: 800px) {
+      .row {
+        flex-direction: column;
+        align-items: center;
+      }
     }
   </style>
+
+  
+  <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
 </head>
 <body>
 
-  <h2>AMBA STOCK </h2>
-  <label for ="skuInput">Enter SKU:</label>
-  <input type="text" id="skuInput" placeholder="e.g., 471MPD">
-  <button onclick="fetchStock()">Fetch Stock</button>
+  <h1>AMBA STOCK</h1>
+  <div class="input-area">
+    <input type="text" id="skuInput" placeholder="Enter SKU (e.g., 471MPD)">
+    <input type="date" id="startDate">
+    <input type="date" id="endDate">
+    <button onclick="fetchStock()">Fetch Stock</button>
+    <button onclick="exportPDF()">Export PDF</button>
+    <button onclick="exportExcel()">Export Excel</button>
+  </div>
 
-  <div id="stockDisplay"></div>
+  <div class="summary" id="remainingDisplay">Remaining Stock: -</div>
+
+  <div class="container">
+    <div class="row">
+      <div class="card">
+        <h2>In Details</h2>
+        <div id="inDetails"></div>
+      </div>
+      <div class="card">
+        <h2>Out Details</h2>
+        <div id="outDetails"></div>
+      </div>
+    </div>
+  </div>
 
   <script>
-    const inCsvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT91A_LuXxb_QVO5Q8iidQyQQCFFhkSkRnVlgJQvhgkeluHEdKJUbht_WRTbwMClofYiDm5Ej-Zw311/pub?gid=1865060622&single=true&output=csv'; // Replace with your actual In Sheet CSV URL
-    const outCsvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQ5ZO4mvjCEAbv4l3-bZUOwBvLl_d6aHPtvYinZPxZ1NpCq4nyjVFrFV_nDXIRpga-htqmsCQm04e3b/pub?gid=0&single=true&output=csv'; // Replace with your actual Out Sheet CSV URL
+    const inCsvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT91A_LuXxb_QVO5Q8iidQyQQCFFhkSkRnVlgJQvhgkeluHEdKJUbht_WRTbwMClofYiDm5Ej-Zw311/pub?gid=1865060622&single=true&output=csv';
+    const outCsvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQ5ZO4mvjCEAbv4l3-bZUOwBvLl_d6aHPtvYinZPxZ1NpCq4nyjVFrFV_nDXIRpga-htqmsCQm04e3b/pub?gid=0&single=true&output=csv';
 
     async function fetchCSV(url) {
       const res = await fetch(url);
       const text = await res.text();
       const rows = text.trim().split('\n').map(row => row.split(','));
-      const headers = rows[0].map(h => h.trim().toLowerCase()); // Normalize headers
-      console.log('Fetched CSV headers:', headers); // Debug: log headers to see how they are parsed
+      const headers = rows[0].map(h => h.trim().toLowerCase());
       return rows.slice(1).map(row => {
         const obj = {};
         row.forEach((val, i) => {
@@ -60,77 +181,89 @@
       });
     }
 
+    function parseDate(str) {
+      if (!str) return null;
+      if (str.includes('/')) {
+        const [day, month, year] = str.split('/');
+        return new Date(`${year}-${month}-${day}`);
+      }
+      return new Date(str);
+    }
+
     async function fetchStock() {
       const sku = document.getElementById('skuInput').value.trim();
+      const startDate = document.getElementById('startDate').value;
+      const endDate = document.getElementById('endDate').value;
+
       if (!sku) return alert("Please enter a SKU");
 
       const inData = await fetchCSV(inCsvUrl);
       const outData = await fetchCSV(outCsvUrl);
 
-      console.log('In Data:', inData); // Debug: log In data to inspect the fetched rows
-      console.log('Out Data:', outData); // Debug: log Out data to inspect the fetched rows
+      function isWithinDate(dateStr) {
+        const entryDate = parseDate(dateStr);
+        if (!entryDate || isNaN(entryDate)) return false;
+        if (startDate && entryDate < parseDate(startDate)) return false;
+        if (endDate && entryDate > parseDate(endDate)) return false;
+        return true;
+      }
 
-      // Filter "In" data (looking for "In" in 'in/out' column)
-      const filteredIn = inData.filter(row => row['sku'] === sku && row['in/out'] === 'In');
-      console.log('Filtered In Data:', filteredIn); // Debug: log filtered "In" data
+      const filteredIn = inData.filter(row => {
+        return row['sku'] === sku && row['in/out'] === 'In' && isWithinDate(row['date']);
+      });
 
-      // Filter "Out" data (looking for matching SKU in Out Sheet)
-      const filteredOut = outData.filter(row => row['sku'] === sku);
-      console.log('Filtered Out Data:', filteredOut); // Debug: log filtered "Out" data
+      const filteredOut = outData.filter(row => {
+        return row['sku'] === sku && isWithinDate(row['date']);
+      });
 
-      let totalIn = 0;
-      let inRowsHtml = '';
-
-      // Process "In" data (sum up the quantities)
+      let totalIn = 0, inRowsHtml = '';
       for (let row of filteredIn) {
         const qty = parseInt(row['quantity']) || 0;
         totalIn += qty;
-
-        inRowsHtml += `<tr>
-          <td>${row['date']}</td>
-          <td>${row['sku']}</td>
-          <td>${qty}</td>
-          <td>${row['s o number/ load no'] || 'OPENING STOCK'}</td>
-        </tr>`;
+        inRowsHtml += `<tr><td>${row['date']}</td><td>${row['sku']}</td><td>${qty}</td><td>${row['s o number/ load no'] || ''}</td></tr>`;
       }
+      inRowsHtml = `<table><tr><th>Date</th><th>SKU</th><th>Qty</th><th>Load No</th></tr>${inRowsHtml}<tr class='total-row'><td colspan="2">Total In</td><td colspan="2">${totalIn}</td></tr></table>`;
 
-      let totalOut = 0;
-      let outRowsHtml = '';
-
-      // Process "Out" data (sum up the quantities)
+      let totalOut = 0, outRowsHtml = '';
       for (let row of filteredOut) {
-        const qty = parseInt(row['qty']) || 0;  // Ensure correct parsing of qty from Out Sheet
+        const qty = parseInt(row['qty']) || 0;
         totalOut += qty;
-
-        outRowsHtml += `<tr>
-          <td>${row['date']}</td>
-          <td>${row['sku']}</td>
-          <td>${qty}</td>
-          <td>${row['party name'] || 'N/A'}</td>
-        </tr>`;
+        outRowsHtml += `<tr><td>${row['date']}</td><td>${row['sku']}</td><td>${qty}</td><td>${row['party name'] || ''}</td></tr>`;
       }
+      outRowsHtml = `<table><tr><th>Date</th><th>SKU</th><th>Qty</th><th>Party Name</th></tr>${outRowsHtml}<tr class='total-row'><td colspan="2">Total Out</td><td colspan="2">${totalOut}</td></tr></table>`;
 
       const remaining = totalIn - totalOut;
 
-      let html = `
-        <div class="section-title">In Details</div>
-        <table>
-          <tr><th>Date</th><th>SKU</th><th>Qty</th><th>Load No</th></tr>
-          ${inRowsHtml || '<tr><td colspan="4">No In Data</td></tr>'}
-          <tr><td colspan="2"><strong>Total In</strong></td><td colspan="2"><strong>${totalIn}</strong></td></tr>
-        </table>
+      document.getElementById('inDetails').innerHTML = inRowsHtml;
+      document.getElementById('outDetails').innerHTML = outRowsHtml;
+      document.getElementById('remainingDisplay').innerHTML = `Remaining Stock: <span style="color: green;">${remaining}</span>`;
+    }
 
-        <div class="section-title">Out Details</div>
-        <table>
-          <tr><th>Date</th><th>SKU</th><th>Qty</th><th>Party Name</th></tr>
-          ${outRowsHtml || '<tr><td colspan="4">No Out Data</td></tr>'}
-          <tr><td colspan="2"><strong>Total Out</strong></td><td colspan="2"><strong>${totalOut}</strong></td></tr>
-        </table>
-
-        <div class="section-title">Remaining Stock: <span style="color: green;">${remaining}</span></div>
+    function exportPDF() {
+      const sku = document.getElementById("skuInput").value.trim() || "Report";
+      const element = document.createElement("div");
+      element.innerHTML = `
+        <h2 style="text-align:center;">AMBA STOCK REPORT</h2>
+        ${document.getElementById("remainingDisplay").outerHTML}
+        <h3>In Details</h3>${document.getElementById("inDetails").innerHTML}
+        <h3>Out Details</h3>${document.getElementById("outDetails").innerHTML}
       `;
+      html2pdf().from(element).save(`AMBA_Stock_Report_${sku}.pdf`);
+    }
 
-      document.getElementById('stockDisplay').innerHTML = html;
+    function exportExcel() {
+      const sku = document.getElementById("skuInput").value.trim() || "Report";
+      const wb = XLSX.utils.book_new();
+      const inTable = document.getElementById("inDetails").querySelector("table");
+      const outTable = document.getElementById("outDetails").querySelector("table");
+
+      const inSheet = XLSX.utils.table_to_sheet(inTable);
+      const outSheet = XLSX.utils.table_to_sheet(outTable);
+
+      XLSX.utils.book_append_sheet(wb, inSheet, "In Details");
+      XLSX.utils.book_append_sheet(wb, outSheet, "Out Details");
+
+      XLSX.writeFile(wb, `AMBA_Stock_Report_${sku}.xlsx`);
     }
   </script>
 
