@@ -116,11 +116,6 @@
       background-color: #f9f9f9;
     }
 
-    .total-row {
-      font-weight: bold;
-      background-color: #fafafa;
-    }
-
     @media screen and (max-width: 800px) {
       .row {
         flex-direction: column;
@@ -129,12 +124,8 @@
     }
   </style>
 
-  
   <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
-
-  
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-
 </head>
 <body>
 
@@ -220,9 +211,18 @@
       for (let row of filteredIn) {
         const qty = parseInt(row['quantity']) || 0;
         totalIn += qty;
-        inRowsHtml += `<tr><td>${row['date']}</td><td>${row['sku']}</td><td>${qty}</td><td>${row['s o number/ load no'] || ''}</td></tr>`;
+        let loadNo = row['s o number/ load no']?.trim();
+        if (!loadNo) {
+          loadNo = 'Opening Stock';
+        }
+        inRowsHtml += `<tr><td>${row['date']}</td><td>${row['sku']}</td><td>${qty}</td><td>${loadNo}</td></tr>`;
       }
-      inRowsHtml = `<table><tr><th>Date</th><th>SKU</th><th>Qty</th><th>Load No</th></tr>${inRowsHtml}<tr class='total-row'><td colspan="2">Total In</td><td colspan="2">${totalIn}</td></tr></table>`;
+      inRowsHtml = `
+        <div style="text-align:right; font-weight:bold; margin-bottom:10px;">Total In: ${totalIn}</div>
+        <table>
+          <tr><th>Date</th><th>SKU</th><th>Qty</th><th>Load No</th></tr>
+          ${inRowsHtml}
+        </table>`;
 
       let totalOut = 0, outRowsHtml = '';
       for (let row of filteredOut) {
@@ -230,7 +230,12 @@
         totalOut += qty;
         outRowsHtml += `<tr><td>${row['date']}</td><td>${row['sku']}</td><td>${qty}</td><td>${row['party name'] || ''}</td></tr>`;
       }
-      outRowsHtml = `<table><tr><th>Date</th><th>SKU</th><th>Qty</th><th>Party Name</th></tr>${outRowsHtml}<tr class='total-row'><td colspan="2">Total Out</td><td colspan="2">${totalOut}</td></tr></table>`;
+      outRowsHtml = `
+        <div style="text-align:right; font-weight:bold; margin-bottom:10px;">Total Out: ${totalOut}</div>
+        <table>
+          <tr><th>Date</th><th>SKU</th><th>Qty</th><th>Party Name</th></tr>
+          ${outRowsHtml}
+        </table>`;
 
       const remaining = totalIn - totalOut;
 
@@ -245,8 +250,8 @@
       element.innerHTML = `
         <h2 style="text-align:center;">AMBA STOCK REPORT</h2>
         ${document.getElementById("remainingDisplay").outerHTML}
-        <h3>In Details</h3>${document.getElementById("inDetails").innerHTML}
-        <h3>Out Details</h3>${document.getElementById("outDetails").innerHTML}
+        <h2>In Details</h2>${document.getElementById("inDetails").innerHTML}
+        <h2>Out Details</h2>${document.getElementById("outDetails").innerHTML}
       `;
       html2pdf().from(element).save(`AMBA_Stock_Report_${sku}.pdf`);
     }
