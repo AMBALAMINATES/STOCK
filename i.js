@@ -1,5 +1,5 @@
-const inCsvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQuMJB0zI-lXYRAX30vSyfz52ApEick9SzGkvgdyyuhC9chXmIyzxJscgmpmX6GMvP0fCmXTGmSJLpP/pub?gid=0&single=true&output=csv';  // URL of your "In" (Production) CSV
-const outCsvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQuMJB0zI-lXYRAX30vSyfz52ApEick9SzGkvgdyyuhC9chXmIyzxJscgmpmX6GMvP0fCmXTGmSJLpP/pub?gid=1505011217&single=true&output=csv';  // URL of your "Out" (Dispatch) CSV
+const inCsvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSh4e7DLmR-cBCbdeBkVvF4bdZppcKwS_1UeqZ5OQivlrbcthzsCapmW2KdfznWwJnC8V8_McCNrcrP/pub?gid=1865060622&single=true&output=csv';  // URL of your "In" (Production) CSV
+const outCsvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQ5ZO4mvjCEAbv4l3-bZUOwBvLl_d6aHPtvYinZPxZ1NpCq4nyjVFrFV_nDXIRpga-htqmsCQm04e3b/pub?gid=0&single=true&output=csv';  // URL of your "Out" (Dispatch) CSV
 
 // Function to fetch and parse the CSV data
 async function fetchStockData() {
@@ -75,3 +75,4 @@ async function fetchStockData() {
         alert('Failed to fetch data from CSV.');
     }
 }
+
